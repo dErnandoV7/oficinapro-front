@@ -55,11 +55,10 @@ export const middleware = (request: NextRequest) => {
     return NextResponse.next()
   }
 
-  // Rotas protegidas: sem token -> /login (com `next`)
+  // Rotas protegidas: sem token -> /login
   if (!token) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
-    url.searchParams.set("next", pathname)
     return NextResponse.redirect(url)
   }
 
