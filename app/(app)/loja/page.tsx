@@ -10,6 +10,11 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { toast } from "@/hooks/use-toast"
 import { createStore } from "@/services/storeService"
 
+const getServerMessage = (err: unknown) => {
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  return typeof message === "string" ? message.trim() : ""
+}
+
 const LojaPage = () => {
   const router = useRouter()
   
@@ -41,13 +46,7 @@ const LojaPage = () => {
 
       router.replace("/clientes")
     } catch (err: unknown) {
-      const serverMessage =
-        typeof (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message ===
-        "string"
-          ? ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "")
-          : ""
-
-      const msg = serverMessage.trim() || "Não foi possível criar sua loja. Tente novamente."
+      const msg = getServerMessage(err) || "Não foi possível criar sua loja. Tente novamente."
       setSubmitError(msg)
 
       toast({

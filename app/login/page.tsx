@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +12,25 @@ import { loginUser } from "@/services/userService"
 import { toast } from "@/hooks/use-toast"
 import { tokenHasStore } from "@/lib/jwt"
 import { LoginUserType } from "@/types/userTypes"
-import { useRouter } from "next/navigation"
+
+const createInitialFormData = (): LoginUserType => ({
+  email: "",
+  password: "",
+})
+
+const getServerMessage = (err: unknown) => {
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  return typeof message === "string" ? message.trim() : ""
+}
+
+const persistToken = (token: string) => {
+  try {
+    sessionStorage.setItem("token", token)
+  } catch {}
+
+  const secure = window.location.protocol === "https:" ? "; secure" : ""
+  document.cookie = `token=${encodeURIComponent(token)}; path=/; samesite=lax${secure}`
+}
 
 
 const LoginPage = () => {
@@ -20,10 +39,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [formData, setFormData] = useState<LoginUserType>({
-    email: "",
-    password: "",
-  })
+  const [formData, setFormData] = useState<LoginUserType>(createInitialFormData)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -35,10 +51,7 @@ const LoginPage = () => {
 
       const token = res?.data?.token
       if (token) {
-        sessionStorage.setItem("token", token)
-
-        const secure = window.location.protocol === "https:" ? "; secure" : ""
-        document.cookie = `token=${encodeURIComponent(token)}; path=/; samesite=lax${secure}`
+        persistToken(token)
       }
 
       toast({
@@ -46,17 +59,12 @@ const LoginPage = () => {
         title: "Sucesso",
         description: res?.message ?? "Login realizado com sucesso!",
       })
-      setFormData({ email: "", password: "" })
+      setFormData(createInitialFormData())
 
       const nextPath = token && tokenHasStore(token) ? "/clientes" : "/loja"
       router.push(nextPath)
     } catch (err: unknown) {
-      const serverMessage =
-        typeof (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message ===
-        "string"
-          ? ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "")
-          : ""
-
+      const serverMessage = getServerMessage(err)
       setSubmitError(
         serverMessage.trim() || "Não foi possível criar sua conta. Tente novamente.",
       )
@@ -92,7 +100,9 @@ const LoginPage = () => {
                     type="email"
                     placeholder="seu@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, email: e.target.value }))
+                    }
                     required
                     className="h-11"
                   />
@@ -106,13 +116,15 @@ const LoginPage = () => {
                       type={showPassword ? "text" : "password"}
                       placeholder="Sua senha"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, password: e.target.value }))
+                      }
                       required
                       className="h-11 pr-10"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPassword((prev) => !prev)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

@@ -21,6 +21,11 @@ import {
 } from "@/components/ui/sidebar"
 import { tokenHasStore } from "@/lib/jwt"
 
+const MENU_BUTTON_CLASS =
+  "gap-3 rounded-xl px-3 ring-1 ring-transparent hover:ring-sidebar-border/60 " +
+  "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground " +
+  "data-[active=true]:shadow-sm data-[active=true]:ring-sidebar-border"
+
 export const AppSidebar = () => {
   const pathname = usePathname()
   const router = useRouter()
@@ -28,32 +33,33 @@ export const AppSidebar = () => {
   const [hasStore, setHasStore] = useState(false)
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    const getToken = () => {
+      try {
+        const stored = window.sessionStorage.getItem("token")
+        if (stored) return stored
+      } catch {}
 
-    let token: string | null = null
-
-    try {
-      token = window.sessionStorage.getItem("token")
-    } catch {
-      token = null
-    }
-
-    if (!token) {
       const cookieTokenMatch = document.cookie.match(/(?:^|; )token=([^;]*)/)
-      if (cookieTokenMatch?.[1]) {
-        try {
-          token = decodeURIComponent(cookieTokenMatch[1])
-        } catch {
-          token = cookieTokenMatch[1]
-        }
+      const cookieValue = cookieTokenMatch?.[1]
+      if (!cookieValue) return null
+
+      try {
+        return decodeURIComponent(cookieValue)
+      } catch {
+        return cookieValue
       }
     }
 
+    const token = getToken()
     setHasStore(token ? tokenHasStore(token) : false)
   }, [pathname])
 
   const handleLogout = () => {
-    sessionStorage.removeItem("token")
+    try {
+      sessionStorage.removeItem("token")
+    } catch {
+      // ignore
+    }
 
     const baseCookie = "token=; path=/; max-age=0; samesite=lax"
     document.cookie = baseCookie
@@ -97,10 +103,7 @@ export const AppSidebar = () => {
                     size="lg"
                     isActive={pathname === "/clientes"}
                     tooltip="Clientes"
-                    className={
-                      "gap-3 rounded-xl px-3 ring-1 ring-transparent hover:ring-sidebar-border/60 " +
-                      "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-sm data-[active=true]:ring-sidebar-border"
-                    }
+                    className={MENU_BUTTON_CLASS}
                   >
                     <Link href="/clientes">
                       <Users className="size-4 opacity-90" />
@@ -115,10 +118,7 @@ export const AppSidebar = () => {
                     size="lg"
                     isActive={pathname === "/loja"}
                     tooltip="Adicionar loja"
-                    className={
-                      "gap-3 rounded-xl px-3 ring-1 ring-transparent hover:ring-sidebar-border/60 " +
-                      "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-sm data-[active=true]:ring-sidebar-border"
-                    }
+                    className={MENU_BUTTON_CLASS}
                   >
                     <Link href="/loja">
                       <Store className="size-4 opacity-90" />

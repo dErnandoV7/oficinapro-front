@@ -16,13 +16,8 @@ type UpdateClientInput = {
     isActive?: boolean
 }
 
-export const listClients = async (params?: { q?: string }) => {
-    const res = await api.get<ApiResponse<Client[]>>("/clients", {
-        params: {
-            ...(params?.q ? { q: params.q } : {}),
-        },
-    })
-
+export const listClients = async () => {
+    const res = await api.get<ApiResponse<Client[]>>("/clients")
     return res.data
 }
 

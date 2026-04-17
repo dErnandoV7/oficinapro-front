@@ -37,6 +37,20 @@ type NovoClienteModalProps = {
   clienteParaEditar?: Cliente | null
 }
 
+type FormState = {
+  nome: string
+  telefone: string
+  endereco: string
+  limiteCredito: string
+}
+
+const createInitialFormData = (): FormState => ({
+  nome: "",
+  telefone: "",
+  endereco: "",
+  limiteCredito: "",
+})
+
 const onlyDigits = (value: string) => value.replace(/\D/g, "")
 
 const formatPhoneBR = (digits: string) => {
@@ -76,6 +90,11 @@ const formatCentsToBRL = (centsDigits: string) => {
   return brlFormatter.format(cents / 100)
 }
 
+const getServerMessage = (err: unknown) => {
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  return typeof message === "string" ? message.trim() : ""
+}
+
 export const NovoClienteModal = ({
   open,
   onOpenChange,
@@ -84,12 +103,9 @@ export const NovoClienteModal = ({
 }: NovoClienteModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    nome: "",
-    telefone: "",
-    endereco: "",
-    limiteCredito: "",
-  })
+  const [formData, setFormData] = useState<FormState>(createInitialFormData)
+
+  const resetForm = () => setFormData(createInitialFormData())
 
   useEffect(() => {
     setSubmitError(null)
@@ -109,12 +125,7 @@ export const NovoClienteModal = ({
       return
     }
 
-    setFormData({
-      nome: "",
-      telefone: "",
-      endereco: "",
-      limiteCredito: "",
-    })
+    resetForm()
   }, [clienteParaEditar, open])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -132,18 +143,11 @@ export const NovoClienteModal = ({
           : undefined,
       })
 
-      setFormData({ nome: "", telefone: "", endereco: "", limiteCredito: "" })
+      resetForm()
       onOpenChange(false)
     } catch (err: unknown) {
-      const serverMessage =
-        typeof (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message ===
-        "string"
-          ? ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "")
-          : ""
-
-      setSubmitError(
-        serverMessage.trim() || "Não foi possível salvar o cliente. Tente novamente.",
-      )
+      const msg = getServerMessage(err) || "Não foi possível salvar o cliente. Tente novamente."
+      setSubmitError(msg)
     } finally {
       setIsSubmitting(false)
     }
@@ -151,7 +155,7 @@ export const NovoClienteModal = ({
 
   const handleClose = () => {
     setSubmitError(null)
-    setFormData({ nome: "", telefone: "", endereco: "", limiteCredito: "" })
+    resetForm()
     onOpenChange(false)
   }
 
@@ -171,7 +175,9 @@ export const NovoClienteModal = ({
         <DialogHeader>
           <DialogTitle>{clienteParaEditar ? "Editar cliente" : "Novo cliente"}</DialogTitle>
           <DialogDescription>
-            {clienteParaEditar ? "Atualize os dados do cliente" : "Preencha os dados para cadastrar um novo cliente"}
+            {clienteParaEditar
+              ? "Atualize os dados do cliente"
+              : "Preencha os dados para cadastrar um novo cliente"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -182,7 +188,9 @@ export const NovoClienteModal = ({
                 id="nome"
                 placeholder="Nome do cliente"
                 value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, nome: e.target.value }))
+                }
                 required
                 className="h-10"
                 minLength={3}
@@ -200,10 +208,10 @@ export const NovoClienteModal = ({
                 placeholder="(11) 99999-9999"
                 value={formatPhoneBR(formData.telefone)}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
+                  setFormData((prev) => ({
+                    ...prev,
                     telefone: onlyDigits(e.target.value).slice(0, 11),
-                  })
+                  }))
                 }
                 className="h-10"
               />
@@ -215,7 +223,9 @@ export const NovoClienteModal = ({
                 id="endereco"
                 placeholder="Endereço completo"
                 value={formData.endereco}
-                onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, endereco: e.target.value }))
+                }
                 required
                 className="h-10"
                 minLength={5}
@@ -237,10 +247,10 @@ export const NovoClienteModal = ({
                     .replace(/^0+(?=\d)/, "")
                     .slice(0, 12)
 
-                  setFormData({
-                    ...formData,
+                  setFormData((prev) => ({
+                    ...prev,
                     limiteCredito: digits,
-                  })
+                  }))
                 }}
                 className="h-10"
                 autoComplete="off"

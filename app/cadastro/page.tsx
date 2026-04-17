@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +12,41 @@ import { Wrench, Eye, EyeOff } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { createUser } from "@/services/userService"
 import type { CreateUserType } from "@/types/userTypes"
-import { useRouter } from "next/navigation"
+
+const INITIAL_FORM_DATA: CreateUserType = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+}
+
+const onlyDigits = (value: string) => value.replace(/\D/g, "")
+
+const formatPhoneBR = (digits: string) => {
+  const d = onlyDigits(digits).slice(0, 11)
+  if (!d) return ""
+
+  const dd = d.slice(0, 2)
+  const rest = d.slice(2)
+
+  if (d.length <= 2) return `(${dd}`
+  if (rest.length <= 4) return `(${dd}) ${rest}`
+
+  if (rest.length >= 9) {
+    const part1 = rest.slice(0, 5)
+    const part2 = rest.slice(5, 9)
+    return `(${dd}) ${part1}${part2 ? `-${part2}` : ""}`
+  }
+
+  const part1 = rest.slice(0, 4)
+  const part2 = rest.slice(4, 8)
+  return `(${dd}) ${part1}${part2 ? `-${part2}` : ""}`
+}
+
+const getServerMessage = (err: unknown) => {
+  const message = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  return typeof message === "string" ? message.trim() : ""
+}
 
 export default function CadastroPage() {
   const router = useRouter()
@@ -18,12 +54,7 @@ export default function CadastroPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [formData, setFormData] = useState<CreateUserType>({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-  })
+  const [formData, setFormData] = useState<CreateUserType>(INITIAL_FORM_DATA)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -37,19 +68,12 @@ export default function CadastroPage() {
         title: "Sucesso",
         description: res?.message ?? "Conta criada com sucesso!",
       })
-      setFormData({ name: "", email: "", phone: "", password: "" })
+      setFormData(INITIAL_FORM_DATA)
 
       router.push("/login")
     } catch (err: unknown) {
-      const serverMessage =
-        typeof (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message ===
-        "string"
-          ? ((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "")
-          : ""
-
-      setSubmitError(
-        serverMessage.trim() || "Não foi possível criar sua conta. Tente novamente.",
-      )
+      const msg = getServerMessage(err) || "Não foi possível criar sua conta. Tente novamente."
+      setSubmitError(msg)
     } finally {
       setIsSubmitting(false)
     }
@@ -82,7 +106,7 @@ export default function CadastroPage() {
                     type="text"
                     placeholder="Seu nome completo"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     required
                     className="h-11"
                   />
@@ -95,7 +119,7 @@ export default function CadastroPage() {
                     type="email"
                     placeholder="seu@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                     required
                     className="h-11"
                   />
@@ -106,9 +130,15 @@ export default function CadastroPage() {
                   <Input
                     id="telefone"
                     type="tel"
+                    inputMode="numeric"
                     placeholder="(11) 99999-9999"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    value={formatPhoneBR(formData.phone)}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        phone: onlyDigits(e.target.value).slice(0, 11),
+                      }))
+                    }
                     required
                     className="h-11"
                   />
@@ -122,13 +152,15 @@ export default function CadastroPage() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Sua senha"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, password: e.target.value }))
+                      }
                       required
                       className="h-11 pr-10"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPassword((prev) => !prev)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

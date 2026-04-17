@@ -36,18 +36,20 @@ export const PerfilClienteModal = ({
   useEffect(() => {
     if (!open || !cliente?.id) return
 
-    let ignore = false
-    setIsLoading(true)
-    setLoadError(null)
-    setProfile(null)
+    const clientId = cliente.id
+    let cancelled = false
 
-    ;(async () => {
+    const loadProfile = async (id: string) => {
+      setIsLoading(true)
+      setLoadError(null)
+      setProfile(null)
+
       try {
-        const res = await getClientProfile(cliente.id)
-        if (ignore) return
+        const res = await getClientProfile(id)
+        if (cancelled) return
         setProfile(res.data)
       } catch (err: unknown) {
-        if (ignore) return
+        if (cancelled) return
 
         const serverMessage =
           typeof (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message ===
@@ -59,13 +61,14 @@ export const PerfilClienteModal = ({
           serverMessage.trim() || "Não foi possível carregar o perfil do cliente. Tente novamente.",
         )
       } finally {
-        if (ignore) return
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
-    })()
+    }
+
+    loadProfile(clientId)
 
     return () => {
-      ignore = true
+      cancelled = true
     }
   }, [open, cliente?.id])
 
@@ -75,12 +78,21 @@ export const PerfilClienteModal = ({
     const c = profile?.client
     const d = profile?.debtSummary
 
+    // Limite de crédito:
+    // - Se já carregou o perfil completo (`profile`), preferimos o `creditLimit` vindo do backend.
+    // - Caso contrário, usamos o valor que já veio no objeto `cliente` (lista).
+    // - `Number(...)` normaliza string/number e `Number.isFinite` evita NaN/Infinity.
     const limiteCreditoRaw = c ? Number(c.creditLimit ?? 0) : cliente.limiteCredito
     const limiteCredito = Number.isFinite(limiteCreditoRaw) ? limiteCreditoRaw : 0
 
+    // Dívida atual:
+    // - Vem do `debtSummary.outstanding` quando o perfil está carregado.
+    // - Se ainda não carregou (ou não veio resumo), cai pra 0.
     const dividaAtualRaw = d ? Number(d.outstanding ?? 0) : 0
     const dividaAtual = Number.isFinite(dividaAtualRaw) ? dividaAtualRaw : 0
 
+    // Disponível = quanto ainda dá pra comprar fiado:
+    // limite de crédito - dívida atual (pode ficar negativo).
     const disponivel = limiteCredito - dividaAtual
 
     return {

@@ -36,10 +36,6 @@ export const tokenHasStore = (token: string): boolean => {
 
   const store = payload.store
   if (typeof store === "string" && store.trim()) return true
-  if (typeof store === "object" && store && "id" in store) {
-    const id = (store as { id?: unknown }).id
-    if (typeof id === "string" && id.trim()) return true
-  }
 
   return false
 }
