@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LogOut, Store, Users, Wrench } from "lucide-react"
+import { LogOut, Store, Users, Wrench, Package } from "lucide-react"
 
 import {
   Sidebar,
@@ -37,7 +37,7 @@ export const AppSidebar = () => {
       try {
         const stored = window.sessionStorage.getItem("token")
         if (stored) return stored
-      } catch {}
+      } catch { }
 
       const cookieTokenMatch = document.cookie.match(/(?:^|; )token=([^;]*)/)
       const cookieValue = cookieTokenMatch?.[1]
@@ -97,20 +97,37 @@ export const AppSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               {hasStore ? (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    size="lg"
-                    isActive={pathname === "/clientes"}
-                    tooltip="Clientes"
-                    className={MENU_BUTTON_CLASS}
-                  >
-                    <Link href="/clientes">
-                      <Users className="size-4 opacity-90" />
-                      <span className="font-medium">Clientes</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      size="lg"
+                      isActive={pathname === "/clientes"}
+                      tooltip="Clientes"
+                      className={MENU_BUTTON_CLASS}
+                    >
+                      <Link href="/clientes">
+                        <Users className="size-4 opacity-90" />
+                        <span className="font-medium">Clientes</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      size="lg"
+                      isActive={pathname === "/produtos"}
+                      tooltip="produtos"
+                      className={MENU_BUTTON_CLASS}
+                    >
+                      <Link href="/produtos">
+                        <Package className="size-4 opacity-90" />
+                        <span className="font-medium">Produtos & Serviços</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               ) : (
                 <SidebarMenuItem>
                   <SidebarMenuButton
