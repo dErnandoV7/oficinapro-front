@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     Table,
     TableBody,
     TableCell,
@@ -35,9 +42,32 @@ const getServerMessage = (err: unknown) => {
     return typeof message === "string" ? message.trim() : ""
 }
 
+type ProductFilters = {
+    search?: string
+    type?: string
+    isActive?: string
+    sort?: string
+}
+
+const buildServiceParams = (filters: ProductFilters) => {
+    const [sortBy, order] = filters.sort ? filters.sort.split("-") : []
+    return {
+        ...(filters.search && { search: filters.search }),
+        ...(filters.type && { type: filters.type as "PRODUCT" | "SERVICE" }),
+        ...(filters.isActive && { isActive: filters.isActive as "true" | "false" }),
+        ...(sortBy && {
+            sortBy: sortBy as "sellPrice" | "costPrice" | "stock",
+            order: order as "asc" | "desc",
+        }),
+    }
+}
+
 const ProductsPage = () => {
     const [products, setProducts] = useState<Product[]>([])
     const [search, setSearch] = useState("")
+    const [filterType, setFilterType] = useState("")
+    const [filterIsActive, setFilterIsActive] = useState("")
+    const [filterSort, setFilterSort] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [loadError, setLoadError] = useState<string | null>(null)
     const [modalNovoProduto, setModalNovoProduto] = useState(false)
@@ -53,12 +83,12 @@ const ProductsPage = () => {
         return () => { isMountedRef.current = false }
     }, [])
 
-    const loadProducts = async (searchTerm?: string) => {
+    const loadProducts = async (filters: ProductFilters) => {
         setIsLoading(true)
         setLoadError(null)
 
         try {
-            const res = await listProducts(searchTerm)
+            const res = await listProducts(buildServiceParams(filters))
             if (!isMountedRef.current) return
             setProducts(res.data)
         } catch (err: unknown) {
@@ -72,15 +102,28 @@ const ProductsPage = () => {
     }
 
     useEffect(() => {
-        loadProducts().catch(() => undefined)
+        loadProducts({}).catch(() => undefined)
     }, [])
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            loadProducts(search || undefined).catch(() => undefined)
+            loadProducts({
+                search: search || undefined,
+                type: filterType || undefined,
+                isActive: filterIsActive || undefined,
+                sort: filterSort || undefined,
+            }).catch(() => undefined)
         }, 400)
         return () => clearTimeout(timeout)
-    }, [search])
+    }, [search, filterType, filterIsActive, filterSort])
+
+    const reloadWithCurrentFilters = () =>
+        loadProducts({
+            search: search || undefined,
+            type: filterType || undefined,
+            isActive: filterIsActive || undefined,
+            sort: filterSort || undefined,
+        }).catch(() => undefined)
 
     const handleSalvarProduto = async (dados: ProductFormData) => {
         if (modoEdicao && produtoSelecionado) {
@@ -90,7 +133,7 @@ const ProductsPage = () => {
             const res = await createProduct(dados)
             toast({ variant: "success", title: "Sucesso", description: res.message })
         }
-        loadProducts(search || undefined).catch(() => undefined)
+        reloadWithCurrentFilters()
     }
 
     const handleVerProduto = (produto: Product) => {
@@ -115,7 +158,7 @@ const ProductsPage = () => {
         try {
             const res = await deleteProduct(produtoSelecionado.id)
             setProdutoSelecionado(null)
-            loadProducts(search || undefined).catch(() => undefined)
+            reloadWithCurrentFilters()
             toast({ variant: "success", title: "Sucesso", description: res.message })
         } catch (err: unknown) {
             const serverMessage = getServerMessage(err)
@@ -147,7 +190,7 @@ const ProductsPage = () => {
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => loadProducts(search || undefined).catch(() => undefined)}
+                                onClick={reloadWithCurrentFilters}
                                 disabled={isLoading}
                             >
                                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
@@ -169,14 +212,62 @@ const ProductsPage = () => {
                 </CardHeader>
 
                 <CardContent>
-                    <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar por nome ou categoria..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-10 h-10"
-                        />
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-6">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por nome ou categoria..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-10 h-10"
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">Tipo</span>
+                            <Select value={filterType || "all"} onValueChange={(v) => setFilterType(v === "all" ? "" : v)}>
+                                <SelectTrigger className="h-10 w-full sm:w-36">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="PRODUCT">Produto</SelectItem>
+                                    <SelectItem value="SERVICE">Serviço</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">Status</span>
+                            <Select value={filterIsActive || "all"} onValueChange={(v) => setFilterIsActive(v === "all" ? "" : v)}>
+                                <SelectTrigger className="h-10 w-full sm:w-36">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="true">Ativo</SelectItem>
+                                    <SelectItem value="false">Inativo</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">Ordenar por</span>
+                            <Select value={filterSort || "default"} onValueChange={(v) => setFilterSort(v === "default" ? "" : v)}>
+                                <SelectTrigger className="h-10 w-full sm:w-44">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="default">Padrão</SelectItem>
+                                    <SelectItem value="sellPrice-desc">Maior preço</SelectItem>
+                                    <SelectItem value="sellPrice-asc">Menor preço</SelectItem>
+                                    <SelectItem value="costPrice-desc">Maior custo</SelectItem>
+                                    <SelectItem value="costPrice-asc">Menor custo</SelectItem>
+                                    <SelectItem value="stock-desc">Mais estoque</SelectItem>
+                                    <SelectItem value="stock-asc">Menos estoque</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {/* Mobile */}
@@ -191,7 +282,7 @@ const ProductsPage = () => {
                             </div>
                         ) : products.length === 0 ? (
                             <div className="rounded-lg border border-border py-10 text-center text-muted-foreground">
-                                Nenhum item cadastrado
+                                Nenhum item encontrado
                             </div>
                         ) : (
                             <div className="rounded-lg border border-border divide-y divide-border">
@@ -277,7 +368,7 @@ const ProductsPage = () => {
                                 ) : products.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                                            Nenhum item cadastrado
+                                            Nenhum item encontrado
                                         </TableCell>
                                     </TableRow>
                                 ) : (

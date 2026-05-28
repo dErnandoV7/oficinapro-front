@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LogOut, Store, Users, Wrench, Package } from "lucide-react"
+import { LogOut, Store, Users, Wrench, Package, ClipboardList } from "lucide-react"
 
 import {
   Sidebar,
@@ -124,6 +124,21 @@ export const AppSidebar = () => {
                       <Link href="/produtos">
                         <Package className="size-4 opacity-90" />
                         <span className="font-medium">Produtos & Serviços</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      size="lg"
+                      isActive={pathname === "/comandas"}
+                      tooltip="Comandas"
+                      className={MENU_BUTTON_CLASS}
+                    >
+                      <Link href="/comandas">
+                        <ClipboardList className="size-4 opacity-90" />
+                        <span className="font-medium">Comandas</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

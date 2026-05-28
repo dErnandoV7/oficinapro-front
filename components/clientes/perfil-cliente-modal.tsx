@@ -209,7 +209,7 @@ export const PerfilClienteModal = ({
                 <div className="mt-3 pt-3 border-t border-border">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vendas</span>
+                      <span className="text-muted-foreground">Comandas</span>
                       <span className="font-medium">{view.debtSummary.totalSalesCount}</span>
                     </div>
                     <div className="flex justify-between">

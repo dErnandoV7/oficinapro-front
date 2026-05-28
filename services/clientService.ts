@@ -1,6 +1,13 @@
 import api from "@/api/axios"
 import type { ApiResponse, Client, ClientProfile } from "@/types/clientTypes"
 
+export type ListClientsParams = {
+    q?: string
+    isActive?: "true" | "false"
+    sortBy?: "creditLimit"
+    order?: "asc" | "desc"
+}
+
 type CreateClientInput = {
     name: string
     phone?: string
@@ -16,8 +23,8 @@ type UpdateClientInput = {
     isActive?: boolean
 }
 
-export const listClients = async () => {
-    const res = await api.get<ApiResponse<Client[]>>("/clients")
+export const listClients = async (params?: ListClientsParams) => {
+    const res = await api.get<ApiResponse<Client[]>>("/clients", { params })
     return res.data
 }
 

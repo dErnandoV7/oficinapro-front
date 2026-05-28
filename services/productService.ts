@@ -2,10 +2,16 @@ import api from "@/api/axios"
 import { ApiResponse } from "@/types/clientTypes"
 import { Product, ProductFormData } from "@/types/productTypes"
 
-export const listProducts = async (search?: string, order?: "asc" | "desc") => {
-    const res = await api.get<ApiResponse<Product[]>>("/products", {
-        params: { search, order },
-    })
+export type ListProductsParams = {
+    search?: string
+    type?: "PRODUCT" | "SERVICE"
+    isActive?: "true" | "false"
+    sortBy?: "sellPrice" | "costPrice" | "stock"
+    order?: "asc" | "desc"
+}
+
+export const listProducts = async (params?: ListProductsParams) => {
+    const res = await api.get<ApiResponse<Product[]>>("/products", { params })
     return res.data
 }
 

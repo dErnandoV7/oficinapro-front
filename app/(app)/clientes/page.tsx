@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -70,9 +77,29 @@ const toClientPayload = (dados: ClienteFormData) => ({
   ...(typeof dados.limiteCredito === "number" ? { creditLimit: dados.limiteCredito } : {}),
 })
 
+type ClientFilters = {
+  q?: string
+  isActive?: string
+  sort?: string
+}
+
+const buildServiceParams = (filters: ClientFilters) => {
+  const [sortBy, order] = filters.sort ? filters.sort.split("-") : []
+  return {
+    ...(filters.q && { q: filters.q }),
+    ...(filters.isActive && { isActive: filters.isActive as "true" | "false" }),
+    ...(sortBy && {
+      sortBy: sortBy as "creditLimit",
+      order: order as "asc" | "desc",
+    }),
+  }
+}
+
 const ClientesPage = () => {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [busca, setBusca] = useState("")
+  const [filterIsActive, setFilterIsActive] = useState("")
+  const [filterSort, setFilterSort] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [modalNovoCliente, setModalNovoCliente] = useState(false)
@@ -85,34 +112,48 @@ const ClientesPage = () => {
 
   useEffect(() => {
     isMountedRef.current = true
-    return () => {
-      isMountedRef.current = false
-    }
+    return () => { isMountedRef.current = false }
   }, [])
 
-  const loadClientes = async () => {
+  const loadClientes = async (filters: ClientFilters) => {
     setIsLoading(true)
     setLoadError(null)
 
     try {
-      const res = await listClients()
+      const res = await listClients(buildServiceParams(filters))
       if (!isMountedRef.current) return
       setClientes(res.data.map(toClienteUi))
     } catch (err: unknown) {
       if (!isMountedRef.current) return
-
       const serverMessage = getServerMessage(err)
       setLoadError(serverMessage || "Não foi possível carregar os clientes. Tente novamente.")
       setClientes([])
     } finally {
-      if (!isMountedRef.current) return
-      setIsLoading(false)
+      if (isMountedRef.current) setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    loadClientes().catch(() => undefined)
+    loadClientes({}).catch(() => undefined)
   }, [])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      loadClientes({
+        q: busca || undefined,
+        isActive: filterIsActive || undefined,
+        sort: filterSort || undefined,
+      }).catch(() => undefined)
+    }, 400)
+    return () => clearTimeout(timeout)
+  }, [busca, filterIsActive, filterSort])
+
+  const reloadWithCurrentFilters = () =>
+    loadClientes({
+      q: busca || undefined,
+      isActive: filterIsActive || undefined,
+      sort: filterSort || undefined,
+    }).catch(() => undefined)
 
   const handleSalvarCliente = async (dados: ClienteFormData) => {
     const payload = toClientPayload(dados)
@@ -124,7 +165,7 @@ const ClientesPage = () => {
         title: "Sucesso",
         description: res?.message ?? "Cliente atualizado com sucesso!",
       })
-      loadClientes().catch(() => undefined)
+      reloadWithCurrentFilters()
       return
     }
 
@@ -134,7 +175,7 @@ const ClientesPage = () => {
       title: "Sucesso",
       description: res?.message ?? "Cliente criado com sucesso!",
     })
-    loadClientes().catch(() => undefined)
+    reloadWithCurrentFilters()
   }
 
   const handleVerCliente = (cliente: Cliente) => {
@@ -162,7 +203,7 @@ const ClientesPage = () => {
       setModalPerfil(false)
       setClienteSelecionado(null)
 
-      loadClientes().catch(() => undefined)
+      reloadWithCurrentFilters()
 
       toast({
         variant: "success",
@@ -199,9 +240,7 @@ const ClientesPage = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  loadClientes().catch(() => undefined)
-                }}
+                onClick={reloadWithCurrentFilters}
                 disabled={isLoading}
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
@@ -223,14 +262,44 @@ const ClientesPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar cliente..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="pl-10 h-10"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou telefone..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-10 h-10"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Status</span>
+              <Select value={filterIsActive || "all"} onValueChange={(v) => setFilterIsActive(v === "all" ? "" : v)}>
+                <SelectTrigger className="h-10 w-full sm:w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Ordenar por</span>
+              <Select value={filterSort || "default"} onValueChange={(v) => setFilterSort(v === "default" ? "" : v)}>
+                <SelectTrigger className="h-10 w-full sm:w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Padrão</SelectItem>
+                  <SelectItem value="creditLimit-desc">Maior crédito</SelectItem>
+                  <SelectItem value="creditLimit-asc">Menor crédito</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="md:hidden">
@@ -244,7 +313,7 @@ const ClientesPage = () => {
               </div>
             ) : clientes.length === 0 ? (
               <div className="rounded-lg border border-border py-10 text-center text-muted-foreground">
-                Nenhum cliente cadastrado
+                Nenhum cliente encontrado
               </div>
             ) : (
               <div className="rounded-lg border border-border divide-y divide-border">
@@ -336,7 +405,7 @@ const ClientesPage = () => {
                 ) : clientes.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      Nenhum cliente cadastrado
+                      Nenhum cliente encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
