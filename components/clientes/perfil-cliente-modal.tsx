@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Phone, MapPin, CreditCard, AlertCircle } from "lucide-react"
 import { getClientProfile } from "@/services/clientService"
+import { formatPhone } from "@/lib/utils"
 import type { ClientProfile } from "@/types/clientTypes"
 import type { Cliente } from "./novo-cliente-modal"
 
@@ -140,33 +141,33 @@ export const PerfilClienteModal = ({
             <div className="space-y-3">
               {view.telefone && (
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary shrink-0">
                     <Phone className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-muted-foreground">Telefone</p>
-                    <p className="font-medium">{view.telefone}</p>
+                    <p className="font-medium break-words">{formatPhone(view.telefone)}</p>
                   </div>
                 </div>
               )}
 
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary">
+                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary shrink-0">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Endereço</p>
-                  <p className="font-medium">{view.endereco}</p>
+                  <p className="font-medium break-words">{view.endereco}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary">
+                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary shrink-0">
                   <CreditCard className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Limite de crédito</p>
-                  <p className="font-medium">
+                  <p className="font-medium break-words">
                     {view.limiteCredito > 0
                       ? `R$ ${view.limiteCredito.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
                       : "Não definido"}

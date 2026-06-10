@@ -32,6 +32,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Power,
   RefreshCw,
   Search,
   Trash2,
@@ -40,8 +41,10 @@ import {
 import { NovoClienteModal, type Cliente } from "@/components/clientes/novo-cliente-modal"
 import { PerfilClienteModal } from "@/components/clientes/perfil-cliente-modal"
 import { ConfirmarExclusaoModal } from "@/components/clientes/confirmar-exclusao-modal"
+import { ConfirmarStatusModal } from "@/components/clientes/confirmar-status-modal"
 import { toast } from "@/hooks/use-toast"
 import { createClient, deleteClient, listClients, updateClient } from "@/services/clientService"
+import { formatPhone } from "@/lib/utils"
 import type { Client } from "@/types/clientTypes"
 
 const brlFormatter = new Intl.NumberFormat("pt-BR", {
@@ -105,7 +108,9 @@ const ClientesPage = () => {
   const [modalNovoCliente, setModalNovoCliente] = useState(false)
   const [modalPerfil, setModalPerfil] = useState(false)
   const [modalExclusao, setModalExclusao] = useState(false)
+  const [modalStatus, setModalStatus] = useState(false)
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
+  const [clienteParaStatus, setClienteParaStatus] = useState<Cliente | null>(null)
   const [modoEdicao, setModoEdicao] = useState(false)
 
   const isMountedRef = useRef(true)
@@ -192,6 +197,36 @@ const ClientesPage = () => {
   const handleExcluirCliente = (cliente: Cliente) => {
     setClienteSelecionado(cliente)
     setModalExclusao(true)
+  }
+
+  const handleToggleAtivo = (cliente: Cliente) => {
+    setClienteParaStatus(cliente)
+    setModalStatus(true)
+  }
+
+  const confirmarToggleStatus = async () => {
+    if (!clienteParaStatus) return
+
+    const novoStatus = clienteParaStatus.status !== "Ativo"
+
+    try {
+      const res = await updateClient(clienteParaStatus.id, { isActive: novoStatus })
+      toast({
+        variant: "success",
+        title: "Sucesso",
+        description: res?.message ?? (novoStatus ? "Cliente ativado com sucesso!" : "Cliente desativado com sucesso!"),
+      })
+      reloadWithCurrentFilters()
+    } catch (err: unknown) {
+      const serverMessage = getServerMessage(err)
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: serverMessage || "Não foi possível atualizar o status do cliente.",
+      })
+    } finally {
+      setClienteParaStatus(null)
+    }
   }
 
   const confirmarExclusao = async () => {
@@ -334,7 +369,7 @@ const ClientesPage = () => {
                       </div>
 
                       <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                        <p className="truncate">{cliente.telefone || "—"}</p>
+                        <p className="truncate">{formatPhone(cliente.telefone) || "—"}</p>
                         <p className="truncate">{cliente.endereco}</p>
                         <p className="font-medium text-foreground tabular-nums">
                           {cliente.limiteCredito > 0
@@ -359,6 +394,10 @@ const ClientesPage = () => {
                         <DropdownMenuItem onClick={() => handleEditarCliente(cliente)}>
                           <Pencil className="w-4 h-4 mr-2" />
                           Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleAtivo(cliente)}>
+                          <Power className="w-4 h-4 mr-2" />
+                          {cliente.status === "Ativo" ? "Desativar" : "Ativar"}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleExcluirCliente(cliente)}
@@ -413,7 +452,7 @@ const ClientesPage = () => {
                     <TableRow key={cliente.id} className="hover:bg-secondary/30">
                       <TableCell className="font-medium pl-4">{cliente.nome}</TableCell>
                       <TableCell className="text-muted-foreground w-40">
-                        {cliente.telefone || "—"}
+                        {formatPhone(cliente.telefone) || "—"}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-muted-foreground max-w-105 truncate">
                         {cliente.endereco}
@@ -445,6 +484,10 @@ const ClientesPage = () => {
                             <DropdownMenuItem onClick={() => handleEditarCliente(cliente)}>
                               <Pencil className="w-4 h-4 mr-2" />
                               Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleAtivo(cliente)}>
+                              <Power className="w-4 h-4 mr-2" />
+                              {cliente.status === "Ativo" ? "Desativar" : "Ativar"}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleExcluirCliente(cliente)}
@@ -497,6 +540,19 @@ const ClientesPage = () => {
         nomeCliente={clienteSelecionado?.nome || ""}
         onConfirmar={() => {
           confirmarExclusao().catch(() => undefined)
+        }}
+      />
+
+      <ConfirmarStatusModal
+        open={modalStatus}
+        onOpenChange={(open) => {
+          setModalStatus(open)
+          if (!open) setClienteParaStatus(null)
+        }}
+        nomeCliente={clienteParaStatus?.nome || ""}
+        ativar={clienteParaStatus?.status !== "Ativo"}
+        onConfirmar={() => {
+          confirmarToggleStatus().catch(() => undefined)
         }}
       />
     </div>

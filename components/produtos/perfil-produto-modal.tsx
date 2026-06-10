@@ -23,13 +23,13 @@ type PerfilProdutoModalProps = {
 const brlFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
 
 const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
-  <div className="flex items-center gap-3">
+  <div className="flex items-start gap-3 min-w-0">
     <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary shrink-0">
       {icon}
     </div>
-    <div className="min-w-0">
+    <div className="min-w-0 flex-1">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium truncate">{value}</p>
+      <p className="font-medium break-words">{value}</p>
     </div>
   </div>
 )
@@ -48,10 +48,10 @@ export const PerfilProdutoModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3 flex-wrap">
-            <DialogTitle className="text-xl">{produto.name}</DialogTitle>
-            <div className="flex items-center gap-2">
+        <DialogHeader className="min-w-0">
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <DialogTitle className="text-xl break-words min-w-0">{produto.name}</DialogTitle>
+            <div className="flex items-center gap-2 shrink-0">
               <Badge variant="outline">
                 {produto.type === "PRODUCT" ? "Produto" : "Serviço"}
               </Badge>
@@ -65,7 +65,7 @@ export const PerfilProdutoModal = ({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
+        <div className="space-y-6 py-2 min-w-0">
           <div className="space-y-3">
             {produto.category && (
               <InfoRow

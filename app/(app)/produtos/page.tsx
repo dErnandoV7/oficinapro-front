@@ -27,10 +27,11 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, MoreHorizontal, Package, Pencil, Plus, RefreshCw, Search, Trash2 } from "lucide-react"
+import { Eye, MoreHorizontal, Package, Pencil, Plus, Power, RefreshCw, Search, Trash2 } from "lucide-react"
 import { NovoProdutoModal } from "@/components/produtos/novo-produto-modal"
 import { PerfilProdutoModal } from "@/components/produtos/perfil-produto-modal"
 import { ConfirmarExclusaoProdutoModal } from "@/components/produtos/confirmar-exclusao-modal"
+import { ConfirmarStatusModal } from "@/components/produtos/confirmar-status-modal"
 import { toast } from "@/hooks/use-toast"
 import { createProduct, deleteProduct, listProducts, updateProduct } from "@/services/productService"
 import type { Product, ProductFormData } from "@/types/productTypes"
@@ -73,7 +74,9 @@ const ProductsPage = () => {
     const [modalNovoProduto, setModalNovoProduto] = useState(false)
     const [modalPerfil, setModalPerfil] = useState(false)
     const [modalExclusao, setModalExclusao] = useState(false)
+    const [modalStatus, setModalStatus] = useState(false)
     const [produtoSelecionado, setProdutoSelecionado] = useState<Product | null>(null)
+    const [produtoParaStatus, setProdutoParaStatus] = useState<Product | null>(null)
     const [modoEdicao, setModoEdicao] = useState(false)
 
     const isMountedRef = useRef(true)
@@ -150,6 +153,30 @@ const ProductsPage = () => {
     const handleExcluirProduto = (produto: Product) => {
         setProdutoSelecionado(produto)
         setModalExclusao(true)
+    }
+
+    const handleToggleAtivo = (produto: Product) => {
+        setProdutoParaStatus(produto)
+        setModalStatus(true)
+    }
+
+    const confirmarToggleStatus = async () => {
+        if (!produtoParaStatus) return
+
+        try {
+            const res = await updateProduct(produtoParaStatus.id, { isActive: !produtoParaStatus.isActive })
+            toast({ variant: "success", title: "Sucesso", description: res.message })
+            reloadWithCurrentFilters()
+        } catch (err: unknown) {
+            const serverMessage = getServerMessage(err)
+            toast({
+                variant: "destructive",
+                title: "Erro",
+                description: serverMessage || "Não foi possível atualizar o status do item.",
+            })
+        } finally {
+            setProdutoParaStatus(null)
+        }
     }
 
     const confirmarExclusao = async () => {
@@ -322,6 +349,10 @@ const ProductsPage = () => {
                                                     <Pencil className="w-4 h-4 mr-2" />
                                                     Editar
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleToggleAtivo(produto)}>
+                                                    <Power className="w-4 h-4 mr-2" />
+                                                    {produto.isActive ? "Desativar" : "Ativar"}
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => handleExcluirProduto(produto)}
                                                     className="text-destructive focus:text-destructive"
@@ -390,9 +421,11 @@ const ProductsPage = () => {
                                                 {brlFormatter.format(produto.costPrice)}
                                             </TableCell>
                                             <TableCell className="text-center w-24 tabular-nums">
-                                                <span className={produto.stock <= produto.minStock ? "text-destructive font-medium" : ""}>
-                                                    {produto.stock}
-                                                </span>
+                                                {produto.type !== "SERVICE" && (
+                                                    <span className={produto.stock <= produto.minStock ? "text-destructive font-medium" : ""}>
+                                                        {produto.stock}
+                                                    </span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-center w-24">
                                                 <Badge
@@ -418,6 +451,10 @@ const ProductsPage = () => {
                                                         <DropdownMenuItem onClick={() => handleEditarProduto(produto)}>
                                                             <Pencil className="w-4 h-4 mr-2" />
                                                             Editar
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleToggleAtivo(produto)}>
+                                                            <Power className="w-4 h-4 mr-2" />
+                                                            {produto.isActive ? "Desativar" : "Ativar"}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             onClick={() => handleExcluirProduto(produto)}
@@ -468,6 +505,17 @@ const ProductsPage = () => {
                 onOpenChange={setModalExclusao}
                 nomeItem={produtoSelecionado?.name ?? ""}
                 onConfirmar={() => { confirmarExclusao().catch(() => undefined) }}
+            />
+
+            <ConfirmarStatusModal
+                open={modalStatus}
+                onOpenChange={(open) => {
+                    setModalStatus(open)
+                    if (!open) setProdutoParaStatus(null)
+                }}
+                nomeItem={produtoParaStatus?.name ?? ""}
+                ativar={!produtoParaStatus?.isActive}
+                onConfirmar={() => { confirmarToggleStatus().catch(() => undefined) }}
             />
         </div>
     )

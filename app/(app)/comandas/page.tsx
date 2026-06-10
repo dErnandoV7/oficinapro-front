@@ -59,6 +59,7 @@ const resolvePaymentStatus = (sale: Sale) => {
 const ComandasPage = () => {
     const [comandas, setComandas] = useState<Sale[]>([])
     const [filterStatus, setFilterStatus] = useState("")
+    const [filterSort, setFilterSort] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [loadError, setLoadError] = useState<string | null>(null)
     const [modalNovaComanda, setModalNovaComanda] = useState(false)
@@ -72,14 +73,20 @@ const ComandasPage = () => {
         return () => { isMountedRef.current = false }
     }, [])
 
-    const loadComandas = async (status: string) => {
+    const loadComandas = async (status: string, sort: string) => {
         setIsLoading(true)
         setLoadError(null)
 
+        const [sortBy, order] = sort ? sort.split("-") : []
+
         try {
-            const res = await listSales(
-                status ? { paymentStatus: status as "pendente" | "parcial" | "pago" } : undefined
-            )
+            const res = await listSales({
+                ...(status ? { paymentStatus: status as "pendente" | "parcial" | "pago" } : {}),
+                ...(sortBy ? {
+                    sortBy: sortBy as "createdAt" | "totalAmount" | "status" | "customName" | "client",
+                    order: order as "asc" | "desc",
+                } : {}),
+            })
             if (!isMountedRef.current) return
             setComandas(res.data)
         } catch (err: unknown) {
@@ -93,15 +100,15 @@ const ComandasPage = () => {
     }
 
     useEffect(() => {
-        loadComandas("").catch(() => undefined)
+        loadComandas("", "").catch(() => undefined)
     }, [])
 
     useEffect(() => {
-        loadComandas(filterStatus).catch(() => undefined)
-    }, [filterStatus])
+        loadComandas(filterStatus, filterSort).catch(() => undefined)
+    }, [filterStatus, filterSort])
 
     const reloadWithCurrentFilters = () =>
-        loadComandas(filterStatus).catch(() => undefined)
+        loadComandas(filterStatus, filterSort).catch(() => undefined)
 
     const handleVerDetalhes = (saleId: string) => {
         setSelectedSaleId(saleId)
@@ -173,6 +180,27 @@ const ComandasPage = () => {
                                     <SelectItem value="pendente">Pendente</SelectItem>
                                     <SelectItem value="parcial">Pago parcialmente</SelectItem>
                                     <SelectItem value="pago">Pago</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">Ordenar por</span>
+                            <Select value={filterSort || "default"} onValueChange={(v) => setFilterSort(v === "default" ? "" : v)}>
+                                <SelectTrigger className="h-10 w-full sm:w-56">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="default">Mais recentes</SelectItem>
+                                    <SelectItem value="createdAt-asc">Mais antigos</SelectItem>
+                                    <SelectItem value="totalAmount-desc">Maior valor</SelectItem>
+                                    <SelectItem value="totalAmount-asc">Menor valor</SelectItem>
+                                    <SelectItem value="status-asc">Status (Pendente → Pago)</SelectItem>
+                                    <SelectItem value="status-desc">Status (Pago → Pendente)</SelectItem>
+                                    <SelectItem value="customName-asc">Avulso primeiro</SelectItem>
+                                    <SelectItem value="customName-desc">Avulso por último</SelectItem>
+                                    <SelectItem value="client-asc">Cliente (A-Z)</SelectItem>
+                                    <SelectItem value="client-desc">Cliente (Z-A)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -253,9 +281,10 @@ const ComandasPage = () => {
                             <TableHeader>
                                 <TableRow className="bg-secondary/50 hover:bg-secondary/50">
                                     <TableHead className="font-semibold pl-4">Cliente</TableHead>
+                                    <TableHead className="font-semibold pl-4">Avulso</TableHead>
                                     <TableHead className="font-semibold w-32">Itens</TableHead>
                                     <TableHead className="font-semibold text-right w-36">Total</TableHead>
-                                    <TableHead className="font-semibold text-center w-28">Status</TableHead>
+                                    <TableHead className="font-semibold text-center w-36">Status</TableHead>
                                     <TableHead className="font-semibold w-32 hidden lg:table-cell">Data</TableHead>
                                     <TableHead className="font-semibold text-right w-20 pr-4">Ações</TableHead>
                                 </TableRow>
@@ -285,6 +314,9 @@ const ComandasPage = () => {
                                             <TableCell className="font-medium pl-4 truncate">
                                                 {resolveClientName(comanda)}
                                             </TableCell>
+                                            <TableCell className="font-medium  truncate">
+                                                {comanda.customName ? "Sim" : "Não"}
+                                            </TableCell>
                                             <TableCell className="w-32">
                                                 <button
                                                     type="button"
@@ -297,7 +329,7 @@ const ComandasPage = () => {
                                             <TableCell className="text-right font-medium tabular-nums w-36">
                                                 {brlFormatter.format(comanda.totalAmount)}
                                             </TableCell>
-                                            <TableCell className="text-center w-28">
+                                            <TableCell className="text-center w-36">
                                                 {(() => {
                                                     const status = resolvePaymentStatus(comanda)
                                                     return (

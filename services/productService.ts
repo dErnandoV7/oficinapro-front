@@ -20,7 +20,7 @@ export const createProduct = async (data: ProductFormData) => {
     return res.data
 }
 
-export const updateProduct = async (id: string, data: Partial<ProductFormData>) => {
+export const updateProduct = async (id: string, data: Partial<ProductFormData> & { isActive?: boolean }) => {
     const res = await api.patch<ApiResponse<Product>>(`/products/${id}`, data)
     return res.data
 }

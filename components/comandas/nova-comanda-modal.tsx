@@ -18,6 +18,7 @@ import { Trash2, Plus, X } from "lucide-react"
 import { listClients } from "@/services/clientService"
 import { listProducts } from "@/services/productService"
 import { createSale } from "@/services/saleService"
+import { formatPhone } from "@/lib/utils"
 import type { Client } from "@/types/clientTypes"
 import type { Product } from "@/types/productTypes"
 import type { SaleFormData } from "@/types/saleTypes"
@@ -308,7 +309,7 @@ export const NovaComandaModal = ({ open, onOpenChange, onSaved }: NovaComandaMod
                                                         >
                                                             <span className="font-medium">{client.name}</span>
                                                             {client.phone && (
-                                                                <span className="text-muted-foreground ml-2">{client.phone}</span>
+                                                                <span className="text-muted-foreground ml-2">{formatPhone(client.phone)}</span>
                                                             )}
                                                         </button>
                                                     ))

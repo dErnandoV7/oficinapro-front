@@ -50,4 +50,6 @@ export type SaleFormData = {
 export type ListSalesParams = {
     clientId?: string
     paymentStatus?: "pendente" | "parcial" | "pago"
+    sortBy?: "createdAt" | "totalAmount" | "status" | "customName" | "client"
+    order?: "asc" | "desc"
 }

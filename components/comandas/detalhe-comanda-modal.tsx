@@ -10,6 +10,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { getSale } from "@/services/saleService"
+import { formatPhone } from "@/lib/utils"
 import type { Sale } from "@/types/saleTypes"
 
 const brlFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
@@ -84,9 +85,9 @@ export const DetalheComandaModal = ({ open, onOpenChange, saleId }: DetalheComan
                         {/* Cliente */}
                         <div className="space-y-1">
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cliente</p>
-                            <p className="font-medium">{resolveClientName(sale)}</p>
+                            <p className="font-medium break-words">{resolveClientName(sale)}</p>
                             {sale.client?.phone && (
-                                <p className="text-sm text-muted-foreground">{sale.client.phone}</p>
+                                <p className="text-sm text-muted-foreground">{formatPhone(sale.client.phone)}</p>
                             )}
                         </div>
 
@@ -94,7 +95,7 @@ export const DetalheComandaModal = ({ open, onOpenChange, saleId }: DetalheComan
                         {sale.description && (
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Observação</p>
-                                <p className="text-sm">{sale.description}</p>
+                                <p className="text-sm break-words">{sale.description}</p>
                             </div>
                         )}
 
