@@ -34,3 +34,8 @@ export const getProduct = async (id: string) => {
     const res = await api.get<ApiResponse<Product>>(`/products/${id}`)
     return res.data
 }
+
+export const restockProduct = async (id: string, data: { quantity: number; reason?: string }) => {
+    const res = await api.post<ApiResponse<Product>>(`/products/${id}/restock`, data)
+    return res.data
+}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LogOut, Store, Users, Wrench, Package, ClipboardList, Wallet } from "lucide-react"
+import { LayoutDashboard, LogOut, Store, Users, Wrench, Package, ClipboardList, Wallet } from "lucide-react"
 
 import {
   Sidebar,
@@ -74,7 +74,7 @@ export const AppSidebar = () => {
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="px-3 pt-4 pb-3">
         <Link
-          href={hasStore ? "/clientes" : "/loja"}
+          href={hasStore ? "/dashboard" : "/loja"}
           className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
         >
           <div className="flex size-10 items-center justify-center rounded-xl bg-sidebar-accent ring-1 ring-sidebar-border shadow-xs">
@@ -98,6 +98,21 @@ export const AppSidebar = () => {
             <SidebarMenu>
               {hasStore ? (
                 <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      size="lg"
+                      isActive={pathname === "/dashboard"}
+                      tooltip="Painel"
+                      className={MENU_BUTTON_CLASS}
+                    >
+                      <Link href="/dashboard">
+                        <LayoutDashboard className="size-4 opacity-90" />
+                        <span className="font-medium">Painel</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild

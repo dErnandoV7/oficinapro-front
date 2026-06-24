@@ -61,7 +61,7 @@ const LoginPage = () => {
       })
       setFormData(createInitialFormData())
 
-      const nextPath = token && tokenHasStore(token) ? "/clientes" : "/loja"
+      const nextPath = token && tokenHasStore(token) ? "/dashboard" : "/loja"
       router.push(nextPath)
     } catch (err: unknown) {
       const serverMessage = getServerMessage(err)

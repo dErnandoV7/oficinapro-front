@@ -49,7 +49,7 @@ export const middleware = (request: NextRequest) => {
   // Rotas públicas passam; /login com token redireciona
   if (PUBLIC_PATHS.has(pathname)) {
     if (pathname === "/login" && token) {
-      return redirectTo(hasStore ? "/clientes" : STORE_SETUP_PATH)
+      return redirectTo(hasStore ? "/dashboard" : STORE_SETUP_PATH)
     }
 
     return NextResponse.next()
@@ -62,10 +62,10 @@ export const middleware = (request: NextRequest) => {
     return NextResponse.redirect(url)
   }
 
-  // /loja: se já tem loja -> /clientes; senão, continua
+  // /loja: se já tem loja -> /dashboard; senão, continua
   if (pathname === STORE_SETUP_PATH) {
     if (hasStore) {
-      return redirectTo("/clientes")
+      return redirectTo("/dashboard")
     }
 
     return NextResponse.next()

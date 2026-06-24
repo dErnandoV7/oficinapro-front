@@ -44,7 +44,7 @@ const LojaPage = () => {
         description: res?.message ?? "Loja criada com sucesso!",
       })
 
-      router.replace("/clientes")
+      router.replace("/dashboard")
     } catch (err: unknown) {
       const msg = getServerMessage(err) || "Não foi possível criar sua loja. Tente novamente."
       setSubmitError(msg)

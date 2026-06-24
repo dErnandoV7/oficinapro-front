@@ -27,11 +27,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, MoreHorizontal, Package, Pencil, Plus, Power, RefreshCw, Search, Trash2 } from "lucide-react"
+import { Eye, MoreHorizontal, Package, PackagePlus, Pencil, Plus, Power, RefreshCw, Search, Trash2 } from "lucide-react"
 import { NovoProdutoModal } from "@/components/produtos/novo-produto-modal"
 import { PerfilProdutoModal } from "@/components/produtos/perfil-produto-modal"
 import { ConfirmarExclusaoProdutoModal } from "@/components/produtos/confirmar-exclusao-modal"
 import { ConfirmarStatusModal } from "@/components/produtos/confirmar-status-modal"
+import { RestockProdutoModal } from "@/components/produtos/restock-produto-modal"
 import { toast } from "@/hooks/use-toast"
 import { createProduct, deleteProduct, listProducts, updateProduct } from "@/services/productService"
 import type { Product, ProductFormData } from "@/types/productTypes"
@@ -75,8 +76,10 @@ const ProductsPage = () => {
     const [modalPerfil, setModalPerfil] = useState(false)
     const [modalExclusao, setModalExclusao] = useState(false)
     const [modalStatus, setModalStatus] = useState(false)
+    const [modalRestock, setModalRestock] = useState(false)
     const [produtoSelecionado, setProdutoSelecionado] = useState<Product | null>(null)
     const [produtoParaStatus, setProdutoParaStatus] = useState<Product | null>(null)
+    const [produtoParaRestock, setProdutoParaRestock] = useState<Product | null>(null)
     const [modoEdicao, setModoEdicao] = useState(false)
 
     const isMountedRef = useRef(true)
@@ -158,6 +161,16 @@ const ProductsPage = () => {
     const handleToggleAtivo = (produto: Product) => {
         setProdutoParaStatus(produto)
         setModalStatus(true)
+    }
+
+    const handleReabastecer = (produto: Product) => {
+        setProdutoParaRestock(produto)
+        setModalRestock(true)
+    }
+
+    const handleRestockSalvo = () => {
+        toast({ variant: "success", title: "Sucesso", description: "Estoque atualizado com sucesso!" })
+        reloadWithCurrentFilters()
     }
 
     const confirmarToggleStatus = async () => {
@@ -349,6 +362,12 @@ const ProductsPage = () => {
                                                     <Pencil className="w-4 h-4 mr-2" />
                                                     Editar
                                                 </DropdownMenuItem>
+                                                {produto.type === "PRODUCT" && (
+                                                    <DropdownMenuItem onClick={() => handleReabastecer(produto)}>
+                                                        <PackagePlus className="w-4 h-4 mr-2" />
+                                                        Reabastecer
+                                                    </DropdownMenuItem>
+                                                )}
                                                 <DropdownMenuItem onClick={() => handleToggleAtivo(produto)}>
                                                     <Power className="w-4 h-4 mr-2" />
                                                     {produto.isActive ? "Desativar" : "Ativar"}
@@ -452,6 +471,12 @@ const ProductsPage = () => {
                                                             <Pencil className="w-4 h-4 mr-2" />
                                                             Editar
                                                         </DropdownMenuItem>
+                                                        {produto.type === "PRODUCT" && (
+                                                            <DropdownMenuItem onClick={() => handleReabastecer(produto)}>
+                                                                <PackagePlus className="w-4 h-4 mr-2" />
+                                                                Reabastecer
+                                                            </DropdownMenuItem>
+                                                        )}
                                                         <DropdownMenuItem onClick={() => handleToggleAtivo(produto)}>
                                                             <Power className="w-4 h-4 mr-2" />
                                                             {produto.isActive ? "Desativar" : "Ativar"}
@@ -516,6 +541,16 @@ const ProductsPage = () => {
                 nomeItem={produtoParaStatus?.name ?? ""}
                 ativar={!produtoParaStatus?.isActive}
                 onConfirmar={() => { confirmarToggleStatus().catch(() => undefined) }}
+            />
+
+            <RestockProdutoModal
+                open={modalRestock}
+                onOpenChange={(open) => {
+                    setModalRestock(open)
+                    if (!open) setProdutoParaRestock(null)
+                }}
+                produto={produtoParaRestock}
+                onSaved={handleRestockSalvo}
             />
         </div>
     )
